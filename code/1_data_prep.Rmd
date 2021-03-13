@@ -1,0 +1,83 @@
+---
+title: "ncaa_march_madness"
+author: "Matthew Blanchard"
+date: "3/13/2021"
+output: rmdformats::html_clean
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rmdformats)
+```
+
+## Seeding Accuracy in March Madness
+
+How could we use regularizing priors to measure the accuracy of seeding over historical NCAA march madness tournaments?
+We can seek to answer this question by implementing objective variable importance metrics. Comparing its predictive power to other observed features would be beneficial to show a "decay" in expected credibility of the seed differential. i.e. seeding is set at the outset before any games are played, the games create a repeated longitudinal structure for winning teams - over time, it would be helpful to find a way to create features that are adjusted for opponent characteristics - i.e. skill neutral how much the win "proves". A 20 point win over a near-competitor should be intuitively considered as more important than a 20 point win over a lower-skilled opponent, as there is a prior expectation that teams' ability to prepare and win against a variety of teams will persist similarly in the future.
+
+Has accuracy of seeding improved over time? Are there identifiable patterns or regimes across time periods?
+If so, is there a need to take into account the "era' of basketball play and competitive landscape dynamics of the time?
+
+Playing around with priors will demonstrate the effect of our strength of belief in seeding on predictive accuracy. Taking into account seeding, conditional on several other factors which are parameterized in a way that will smooth out the data. If we credibility weight between trusting seeding and trusting other factors (score differentials in games of prior rounds, additional random effect interactions for "high skill" tier, where there may be a subset of the field which are all arguably the best). We can scope out the posterior under a range of reasonable and interpretable assumptions.
+
+The model would be parameterized as a binomial scoring model, where p is the response of this multi-level model. Comparing likelihoods of different models against the corpus of historical data will be used for fitting.. it may be helpful to do some boot-strapping somehow (maintain some invariant in re-organizing the tournament results - maybe keep the number of "upsets" the same but shift them around)
+
+Regardless, it will be important to build from the group up, starting from the simplest intercept model and working up to these ideas, so that we can appreciate the structure.
+
+There are a lot of natural ideas for derived features to compare year-over-year results and bring them to the same basis.
+  - a) the accuracy of seeds - how does emperical win probability compare with initial seeding?
+  - b) the non-linearity of delta_seed in affecting the win probability - how much more variance in the outcome of a 15-16 seed game vs. a 1-32 seed game? Some natural distribution to parametrize this gap in relevance.
+  - c) A comparison against a naive seed model that trusts them entirely, and views historical outcomes as realizations of a true normal-normal elo type of system. (The reasonability of such a model, as a function over time, would be very interesting to view as well. This would be an objective way to derive a feature for how 'correct' the powers that be were with their seeding; conversely, you can characterize this as the relative variance in the elo system's initial values -- reverting to the mean where initial value priors are so uninformative that we are in effect starting the model with an all-mean elo emperical model which is only informed by the outcome of the tournaments.. in other words, the reverse extreme of utilizing no prior information present in the seeding.)
+
+
+## Data wrangling {.tabset .tabset-pills}
+  
+  * SRS 
+    - simple_rating_system, accounts for average point differential and strength of schedule
+    - Centered around zero, and non-Division I games are excluded
+    
+  * SOS
+    - A rating of strength of schedule. 
+    - Centered around zero, and non-Division I games are excluded
+
+  * ppg: pts in original data set is average points per game. 
+  * oppg: pts_vs in original data set is average points allowed.
+
+* AP Poll Results:
+    - ap_pre - AP Preseason polling rank
+    - ap_high - highest rank in AP poll during season
+    - ap_final - rank in AP's final poll
+      - This poll is the seeding once the tournament pool is selected
+      [Source](https://apnews.com/hub/ap-top-25-college-basketball-poll)
+    - "The AP's final poll is released after the field for the NCAA Tournament is selected"
+
+ * ncaa_tournament - factor for outcome of march madness for team
+```{r import}
+library(data.table)
+## Data was scraped by mkearney https://github.com/mkearney/ncaa_bball_data/blob/master/R/sports-reference2.r
+## Sourced from sports-reference.com/cbb/schools
+## Going there to get definitions of data fields
+
+
+
+dt = read.csv("./data/ncaa-team-data.csv",
+              col.names = c("season",
+                            "conf",
+                            "n_win",
+                            "n_loss",
+                            "pct_wl",
+                            "n_win_conf",
+                            "n_loss_conf",
+                            "pct_wl_conf",
+                            "srs",
+                            "sos",
+                            "ppg",
+                            "oppg",
+                            "ap_pre",
+                            "ap_max",
+                            "ap_final",
+                            
+                            ))
+
+
+```
